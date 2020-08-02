@@ -8,5 +8,6 @@
     "Language":"csharp",
     "Website":"http://www.windowwalker.com/",
     "ExecuteFileName":"Microsoft.Plugin.WindowWalker.dll",
-    "IcoPath":"Images\\windowwalker.dark.png"
+    "IcoPath":"Images\\windowwalker.dark.png",
+    "Weight": 1000
 }

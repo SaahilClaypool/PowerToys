@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using Newtonsoft.Json;
 
@@ -18,6 +19,8 @@ namespace Wox.Plugin
         public string Website { get; set; }
         public bool Disabled { get; set; }
         public string ExecuteFilePath { get; private set; }
+        [DefaultValue(1)]
+        public int Weight { get; set; }
 
         public string ExecuteFileName { get; set; }
 

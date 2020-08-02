@@ -708,7 +708,7 @@ namespace PowerLauncher.ViewModel
                 throw new ArgumentNullException(nameof(originQuery));
             }
 
-            foreach (var result in list)
+            foreach (var result in list)    
             {
                 if (_topMostRecord.IsTopMost(result))
                 {
@@ -716,6 +716,7 @@ namespace PowerLauncher.ViewModel
                 }
                 else
                 {
+                    result.Score += metadata.Weight;
                     result.Score += _userSelectedRecord.GetSelectedCount(result) * 5;
                 }
             }
