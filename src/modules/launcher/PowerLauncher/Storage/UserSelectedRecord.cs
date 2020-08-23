@@ -1,7 +1,10 @@
-﻿using System;
+﻿// Copyright (c) Microsoft Corporation
+// The Microsoft Corporation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Collections.Generic;
 using Newtonsoft.Json;
-using Wox.Infrastructure.Storage;
 using Wox.Plugin;
 
 namespace PowerLauncher.Storage
@@ -9,7 +12,7 @@ namespace PowerLauncher.Storage
     public class UserSelectedRecord
     {
         [JsonProperty]
-        private Dictionary<string, int> records = new Dictionary<string, int>();
+        private readonly Dictionary<string, int> records = new Dictionary<string, int>();
 
         public void Add(Result result)
         {
@@ -40,6 +43,7 @@ namespace PowerLauncher.Storage
             {
                 return value;
             }
+
             return 0;
         }
     }

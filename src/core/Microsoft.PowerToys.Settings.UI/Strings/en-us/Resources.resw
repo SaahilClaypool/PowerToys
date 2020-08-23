@@ -288,6 +288,9 @@
   <data name="Appearance_GroupSettings.Text" xml:space="preserve">
     <value>Appearance</value>
   </data>
+  <data name="Fancyzones_Image.AutomationProperties.Name" xml:space="preserve">
+    <value>FancyZones windows</value>
+  </data>
   <data name="FancyZones_Description.Text" xml:space="preserve">
     <value>Create window layouts to help make multi-tasking easy.</value>
   </data>
@@ -309,6 +312,12 @@
   <data name="FancyZones_HotkeyEditorControl.Header" xml:space="preserve">
     <value>Open zones editor</value>
   </data>
+  <data name="SettingsPage_SetShortcut.AutomationProperties.Name" xml:space="preserve">
+    <value>Set Shortcut</value>
+  </data>
+  <data name="SettingsPage_SetShortcut_Glyph.AutomationProperties.Name" xml:space="preserve">
+    <value>Information Symbol</value>
+  </data>
   <data name="FancyZones_LaunchEditorButtonControl.Text" xml:space="preserve">
     <value>Launch zones editor</value>
   </data>
@@ -319,7 +328,7 @@
     <value>Use a non-primary mouse button to toggle zone activation</value>
   </data>
   <data name="FancyZones_MoveWindowsAcrossAllMonitorsCheckBoxControl.Content" xml:space="preserve">
-    <value>Move windows between zones across all monitors when snapping with (Win + Arrow)</value>
+    <value>Move windows between zones across all monitors</value>
   </data>
   <data name="FancyZones_OverrideSnapHotkeysCheckBoxControl.Content" xml:space="preserve">
     <value>Override Windows Snap shortcut (Win + Arrow) to move windows between zones</value>
@@ -360,6 +369,9 @@
   <data name="GeneralPage_AboutPowerToysHeader.Text" xml:space="preserve">
     <value>About PowerToys</value>
   </data>
+  <data name="PowerToys_Icon.AutomationProperties.Name" xml:space="preserve">
+    <value>PowerToys Icon</value>
+  </data>
   <data name="GeneralPage_CheckForUpdates.Content" xml:space="preserve">
     <value>Check for updates</value>
   </data>
@@ -396,7 +408,7 @@
   <data name="PowerRename_Toggle_Enable.Header" xml:space="preserve">
     <value>Enable PowerRename</value>
   </data>
-  <data name="RadioButtons_Name_Theme.Header" xml:space="preserve">
+  <data name="RadioButtons_Name_Theme.Text" xml:space="preserve">
     <value>Settings theme</value>
   </data>
   <data name="PowerRename_Toggle_EnableOnContextMenu.Header" xml:space="preserve">
@@ -417,7 +429,7 @@
   <data name="FileExplorerPreview_ToggleSwitch_Preview_SVG.Header" xml:space="preserve">
     <value>Enable SVG (.svg) preview</value>
   </data>
-    <data name="FileExplorerPreview_ToggleSwitch_SVG_Thumbnail.Header" xml:space="preserve">
+  <data name="FileExplorerPreview_ToggleSwitch_SVG_Thumbnail.Header" xml:space="preserve">
     <value>Enable SVG (.svg) thumbnails</value>
   </data>
   <data name="FileExplorerPreview_Description.Text" xml:space="preserve">
@@ -588,6 +600,9 @@
   <data name="About_PowerLauncher.Text" xml:space="preserve">
     <value>About PowerToys Run</value>
   </data>
+  <data name="PowerToys_Run_Image.AutomationProperties.Name" xml:space="preserve">
+    <value>PowerToys Run</value>
+  </data>
   <data name="About_PowerRename.Text" xml:space="preserve">
     <value>About Power Rename</value>
   </data>
@@ -640,6 +655,30 @@
     <value>Remap shortcuts to other shortcuts or keys. Additionally, mappings can be targeted to specific applications as well.</value>
   </data>
   <data name="About_PowerToys.Text" xml:space="preserve">
-    <value>Microsoft PowerToys is a set of utilities for power users to tune and streamline their Windows experience for greater productivity</value>
+    <value>Microsoft PowerToys is a set of utilities for power users to tune and streamline their Windows experience for greater productivity.</value>
+  </data>
+  <data name="FancyZones_SpanZonesAcrossMonitorsCheckBoxControl.Content" xml:space="preserve">
+    <value>Allow zones to span across monitors</value>
+  </data>
+  <data name="ImageResizer_Formatting_ActualHeight.Text" xml:space="preserve">
+    <value>Actual height</value>
+  </data>
+  <data name="ImageResizer_Formatting_ActualWidth.Text" xml:space="preserve">
+    <value>Actual width</value>
+  </data>
+  <data name="ImageResizer_Formatting_Filename.Text" xml:space="preserve">
+    <value>Original filename</value>
+  </data>
+  <data name="ImageResizer_Formatting_SelectedHeight.Text" xml:space="preserve">
+    <value>Selected height</value>
+  </data>
+  <data name="ImageResizer_Formatting_SelectedWidth.Text" xml:space="preserve">
+    <value>Selected width</value>
+  </data>
+  <data name="ImageResizer_Formatting_Sizename.Text" xml:space="preserve">
+    <value>Size name</value>
+  </data>
+  <data name="FancyZones_MoveWindowsBasedOnPositionCheckBoxControl.Content" xml:space="preserve">
+    <value>Move windows based on their position</value>
   </data>
 </root>

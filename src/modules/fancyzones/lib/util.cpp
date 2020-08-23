@@ -6,11 +6,13 @@
 #include <common/dpi_aware.h>
 
 #include <sstream>
+#include <complex>
 
-namespace
+// Non-Localizable strings
+namespace NonLocalizable
 {
-    const wchar_t POWER_TOYS_APP_POWER_LAUCHER[] = L"POWERLAUNCHER.EXE";
-    const wchar_t POWER_TOYS_APP_FANCY_ZONES_EDITOR[] = L"FANCYZONESEDITOR.EXE";
+    const wchar_t PowerToysAppPowerLauncher[] = L"POWERLAUNCHER.EXE";
+    const wchar_t PowerToysAppFZEditor[] = L"FANCYZONESEDITOR.EXE";
 }
 
 typedef BOOL(WINAPI* GetDpiForMonitorInternalFunc)(HMONITOR, UINT, UINT*, UINT*);
@@ -124,21 +126,22 @@ void SizeWindowToRect(HWND window, RECT rect) noexcept
     WINDOWPLACEMENT placement{};
     ::GetWindowPlacement(window, &placement);
 
-    //wait if SW_SHOWMINIMIZED would be removed from window (Issue #1685)
-    for (int i = 0; i < 5 && (placement.showCmd & SW_SHOWMINIMIZED) != 0; i++)
+    // Wait if SW_SHOWMINIMIZED would be removed from window (Issue #1685)
+    for (int i = 0; i < 5 && (placement.showCmd == SW_SHOWMINIMIZED); ++i)
     {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         ::GetWindowPlacement(window, &placement);
     }
 
     // Do not restore minimized windows. We change their placement though so they restore to the correct zone.
-    if ((placement.showCmd & SW_SHOWMINIMIZED) == 0)
+    if ((placement.showCmd != SW_SHOWMINIMIZED) &&
+        (placement.showCmd != SW_MINIMIZE))
     {
-        placement.showCmd = SW_RESTORE | SW_SHOWNA;
+        placement.showCmd = SW_RESTORE;
     }
 
     // Remove maximized show command to make sure window is moved to the correct zone.
-    if (placement.showCmd & SW_SHOWMAXIMIZED)
+    if (placement.showCmd == SW_SHOWMAXIMIZED)
     {
         placement.showCmd = SW_RESTORE;
         placement.flags &= ~WPF_RESTORETOMAXIMIZED;
@@ -166,20 +169,31 @@ bool IsInterestingWindow(HWND window, const std::vector<std::wstring>& excludedA
     {
         return false;
     }
-    if (find_app_name_in_path(filtered.process_path, { POWER_TOYS_APP_POWER_LAUCHER }))
+    if (find_app_name_in_path(filtered.process_path, { NonLocalizable::PowerToysAppPowerLauncher }))
     {
         return false;
     }
-    if (find_app_name_in_path(filtered.process_path, { POWER_TOYS_APP_FANCY_ZONES_EDITOR }))
+    if (find_app_name_in_path(filtered.process_path, { NonLocalizable::PowerToysAppFZEditor }))
     {
         return false;
     }
     return true;
 }
 
+bool IsWindowMaximized(HWND window) noexcept
+{
+    WINDOWPLACEMENT placement{};
+    if (GetWindowPlacement(window, &placement) &&
+        placement.showCmd == SW_SHOWMAXIMIZED)
+    {
+        return true;
+    }
+    return false;
+}
+
 void SaveWindowSizeAndOrigin(HWND window) noexcept
 {
-    HANDLE handle = GetPropW(window, RESTORE_SIZE_STAMP);
+    HANDLE handle = GetPropW(window, ZonedWindowProperties::PropertyRestoreSizeID);
     if (handle)
     {
         // Size already set, skip
@@ -201,15 +215,15 @@ void SaveWindowSizeAndOrigin(HWND window) noexcept
         std::array<int, 2> windowOriginData = { originX, originY };
         HANDLE rawData;
         memcpy(&rawData, windowSizeData.data(), sizeof rawData);
-        SetPropW(window, RESTORE_SIZE_STAMP, rawData);
+        SetPropW(window, ZonedWindowProperties::PropertyRestoreSizeID, rawData);
         memcpy(&rawData, windowOriginData.data(), sizeof rawData);
-        SetPropW(window, RESTORE_ORIGIN_STAMP, rawData);
+        SetPropW(window, ZonedWindowProperties::PropertyRestoreOriginID, rawData);
     }
 }
 
 void RestoreWindowSize(HWND window) noexcept
 {
-    auto windowSizeData = GetPropW(window, RESTORE_SIZE_STAMP);
+    auto windowSizeData = GetPropW(window, ZonedWindowProperties::PropertyRestoreSizeID);
     if (windowSizeData)
     {
         std::array<int, 2> windowSize;
@@ -226,13 +240,13 @@ void RestoreWindowSize(HWND window) noexcept
             SizeWindowToRect(window, rect);
         }
 
-        ::RemoveProp(window, RESTORE_SIZE_STAMP);
+        ::RemoveProp(window, ZonedWindowProperties::PropertyRestoreSizeID);
     }
 }
 
 void RestoreWindowOrigin(HWND window) noexcept
 {
-    auto windowOriginData = GetPropW(window, RESTORE_ORIGIN_STAMP);
+    auto windowOriginData = GetPropW(window, ZonedWindowProperties::PropertyRestoreOriginID);
     if (windowOriginData)
     {
         std::array<int, 2> windowOrigin;
@@ -254,7 +268,7 @@ void RestoreWindowOrigin(HWND window) noexcept
             SizeWindowToRect(window, rect);
         }
 
-        ::RemoveProp(window, RESTORE_ORIGIN_STAMP);
+        ::RemoveProp(window, ZonedWindowProperties::PropertyRestoreOriginID);
     }
 }
 
@@ -334,4 +348,127 @@ bool IsValidDeviceId(const std::wstring& str)
     }
 
     return true;
+}
+
+size_t ChooseNextZoneByPosition(DWORD vkCode, RECT windowRect, const std::vector<RECT>& zoneRects) noexcept
+{
+    using complex = std::complex<double>;
+    const size_t invalidResult = zoneRects.size();
+    const double inf = 1e100;
+    const double eccentricity = 2.0;
+
+    auto rectCenter = [](RECT rect) {
+        return complex {
+            0.5 * rect.left + 0.5 * rect.right,
+            0.5 * rect.top + 0.5 * rect.bottom
+        };
+    };
+
+    auto distance = [&](complex arrowDirection, complex zoneDirection) {
+        double result = inf;
+
+        try
+        {
+            double scalarProduct = (arrowDirection * conj(zoneDirection)).real();
+            if (scalarProduct <= 0.0)
+            {
+                return inf;
+            }
+
+            // no need to divide by abs(arrowDirection) because it's = 1
+            double cosAngle = scalarProduct / abs(zoneDirection);
+            double tanAngle = abs(tan(acos(cosAngle)));
+
+            if (tanAngle > 10)
+            {
+                // The angle is too wide
+                return inf;
+            }
+
+            // find the intersection with the ellipse with given eccentricity and major axis along arrowDirection
+            double intersectY = 2 * eccentricity / (1.0 + eccentricity * eccentricity * tanAngle * tanAngle);
+            double distanceEstimate = scalarProduct / intersectY;
+
+            if (std::isfinite(distanceEstimate))
+            {
+                result = distanceEstimate;
+            }
+        }
+        catch (...)
+        {
+        }
+
+        return result;
+    };
+    std::vector<std::pair<size_t, complex>> candidateCenters;
+    for (size_t i = 0; i < zoneRects.size(); i++)
+    {
+        auto center = rectCenter(zoneRects[i]);
+
+        // Offset the zone slightly, to differentiate in case there are overlapping zones
+        center += 0.001 * (i + 1);
+
+        candidateCenters.emplace_back(i, center);
+    }
+
+    complex directionVector, windowCenter = rectCenter(windowRect);
+
+    switch (vkCode)
+    {
+    case VK_UP:
+        directionVector = { 0.0, -1.0 };
+        break;
+    case VK_DOWN:
+        directionVector = { 0.0, 1.0 };
+        break;
+    case VK_LEFT:
+        directionVector = { -1.0, 0.0 };
+        break;
+    case VK_RIGHT:
+        directionVector = { 1.0, 0.0 };
+        break;
+    default:
+        return invalidResult;
+    }
+
+    size_t closestIdx = invalidResult;
+    double smallestDistance = inf;
+
+    for (auto [zoneIdx, zoneCenter] : candidateCenters)
+    {
+        double dist = distance(directionVector, zoneCenter - windowCenter);
+        if (dist < smallestDistance)
+        {
+            smallestDistance = dist;
+            closestIdx = zoneIdx;
+        }
+    }
+
+    return closestIdx;
+}
+
+RECT PrepareRectForCycling(RECT windowRect, RECT zoneWindowRect, DWORD vkCode) noexcept
+{
+    LONG deltaX = 0, deltaY = 0;
+    switch (vkCode)
+    {
+    case VK_UP:
+        deltaY = zoneWindowRect.bottom - zoneWindowRect.top;
+        break;
+    case VK_DOWN:
+        deltaY = zoneWindowRect.top - zoneWindowRect.bottom;
+        break;
+    case VK_LEFT:
+        deltaX = zoneWindowRect.right - zoneWindowRect.left;
+        break;
+    case VK_RIGHT:
+        deltaX = zoneWindowRect.left - zoneWindowRect.right;
+    }
+
+    windowRect.left += deltaX;
+    windowRect.right += deltaX;
+    windowRect.top += deltaY;
+    windowRect.bottom += deltaY;
+
+    return windowRect;
 }

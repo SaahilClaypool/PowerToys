@@ -1,16 +1,19 @@
-﻿using System;
+﻿// Copyright (c) Microsoft Corporation
+// The Microsoft Corporation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Threading.Tasks;
 using System.Windows;
+using PowerLauncher.Helper;
+using PowerLauncher.ViewModel;
 using Wox.Core.Plugin;
 using Wox.Core.Resource;
-using PowerLauncher.Helper;
 using Wox.Infrastructure;
 using Wox.Infrastructure.Image;
 using Wox.Plugin;
-using PowerLauncher.ViewModel;
 
 namespace Wox
 {
@@ -19,12 +22,10 @@ namespace Wox
         private readonly SettingWindowViewModel _settingsVM;
         private readonly MainViewModel _mainVM;
         private readonly Alphabet _alphabet;
-        private bool _disposed = false;
         private readonly ThemeManager _themeManager;
+        private bool _disposed;
 
         public event ThemeChangedHandler ThemeChanged;
-
-        #region Constructor
 
         public PublicAPIInstance(SettingWindowViewModel settingsVM, MainViewModel mainVM, Alphabet alphabet, ThemeManager themeManager)
         {
@@ -35,10 +36,6 @@ namespace Wox
             _themeManager.ThemeChanged += OnThemeChanged;
             WebRequest.RegisterPrefix("data", new DataWebRequestFactory());
         }
-
-        #endregion
-
-        #region Public API
 
         public void ChangeQuery(string query, bool requery = false)
         {
@@ -60,7 +57,7 @@ namespace Wox
 
         public void CheckForNewUpdate()
         {
-            //_settingsVM.UpdateApp();
+            // _settingsVM.UpdateApp();
         }
 
         public void SaveAppAllSettings()
@@ -107,10 +104,6 @@ namespace Wox
             GC.SuppressFinalize(this);
         }
 
-        #endregion
-
-        #region Protected Methods
-
         protected void OnThemeChanged(Theme oldTheme, Theme newTheme)
         {
             ThemeChanged?.Invoke(oldTheme, newTheme);
@@ -127,6 +120,5 @@ namespace Wox
                 }
             }
         }
-        #endregion
     }
 }

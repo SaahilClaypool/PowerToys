@@ -16,9 +16,11 @@
 
 extern "C" IMAGE_DOS_HEADER __ImageBase;
 
-namespace
+// Non-Localizable strings
+namespace NonLocalizable
 {
-    const wchar_t TOAST_TITLE[] = L"FancyZones";
+    const wchar_t FancyZonesRunAsAdminInfoPage[] = L"https://aka.ms/powertoysDetectedElevatedHelp";
+    const wchar_t ToastNotificationButtonUrl[] = L"powertoys://cant_drag_elevated_disable/";
 }
 
 namespace WindowMoveHandlerUtils
@@ -81,7 +83,8 @@ public:
     void MoveSizeEnd(HWND window, POINT const& ptScreen, const std::unordered_map<HMONITOR, winrt::com_ptr<IZoneWindow>>& zoneWindowMap) noexcept;
 
     void MoveWindowIntoZoneByIndexSet(HWND window, const std::vector<int>& indexSet, winrt::com_ptr<IZoneWindow> zoneWindow) noexcept;
-    bool MoveWindowIntoZoneByDirection(HWND window, DWORD vkCode, bool cycle, winrt::com_ptr<IZoneWindow> zoneWindow);
+    bool MoveWindowIntoZoneByDirectionAndIndex(HWND window, DWORD vkCode, bool cycle, winrt::com_ptr<IZoneWindow> zoneWindow);
+    bool MoveWindowIntoZoneByDirectionAndPosition(HWND window, DWORD vkCode, bool cycle, winrt::com_ptr<IZoneWindow> zoneWindow);
 
 private:
     void WarnIfElevationIsRequired(HWND window) noexcept;
@@ -167,9 +170,14 @@ void WindowMoveHandler::MoveWindowIntoZoneByIndexSet(HWND window, const std::vec
     pimpl->MoveWindowIntoZoneByIndexSet(window, indexSet, zoneWindow);
 }
 
-bool WindowMoveHandler::MoveWindowIntoZoneByDirection(HWND window, DWORD vkCode, bool cycle, winrt::com_ptr<IZoneWindow> zoneWindow)
+bool WindowMoveHandler::MoveWindowIntoZoneByDirectionAndIndex(HWND window, DWORD vkCode, bool cycle, winrt::com_ptr<IZoneWindow> zoneWindow)
 {
-    return pimpl->MoveWindowIntoZoneByDirection(window, vkCode, cycle, zoneWindow);
+    return pimpl->MoveWindowIntoZoneByDirectionAndIndex(window, vkCode, cycle, zoneWindow);
+}
+
+bool WindowMoveHandler::MoveWindowIntoZoneByDirectionAndPosition(HWND window, DWORD vkCode, bool cycle, winrt::com_ptr<IZoneWindow> zoneWindow)
+{
+    return pimpl->MoveWindowIntoZoneByDirectionAndPosition(window, vkCode, cycle, zoneWindow);
 }
 
 void WindowMoveHandlerPrivate::OnMouseDown() noexcept
@@ -335,9 +343,9 @@ void WindowMoveHandlerPrivate::MoveSizeEnd(HWND window, POINT const& ptScreen, c
         {
             if (WindowMoveHandlerUtils::IsCursorTypeIndicatingSizeEvent())
             {
-                ::RemoveProp(window, RESTORE_SIZE_STAMP);
+                ::RemoveProp(window, ZonedWindowProperties::PropertyRestoreSizeID);
             }
-            else
+            else if (!IsWindowMaximized(window))
             {
                 RestoreWindowSize(window);
             }
@@ -361,7 +369,7 @@ void WindowMoveHandlerPrivate::MoveSizeEnd(HWND window, POINT const& ptScreen, c
                 }
             }
         }
-        ::RemoveProp(window, MULTI_ZONE_STAMP);
+        ::RemoveProp(window, ZonedWindowProperties::PropertyMultipleZoneID);
     }
     
     m_inMoveSize = false;
@@ -387,9 +395,14 @@ void WindowMoveHandlerPrivate::MoveWindowIntoZoneByIndexSet(HWND window, const s
     }
 }
 
-bool WindowMoveHandlerPrivate::MoveWindowIntoZoneByDirection(HWND window, DWORD vkCode, bool cycle, winrt::com_ptr<IZoneWindow> zoneWindow)
+bool WindowMoveHandlerPrivate::MoveWindowIntoZoneByDirectionAndIndex(HWND window, DWORD vkCode, bool cycle, winrt::com_ptr<IZoneWindow> zoneWindow)
 {
-    return zoneWindow && zoneWindow->MoveWindowIntoZoneByDirection(window, vkCode, cycle);
+    return zoneWindow && zoneWindow->MoveWindowIntoZoneByDirectionAndIndex(window, vkCode, cycle);
+}
+
+bool WindowMoveHandlerPrivate::MoveWindowIntoZoneByDirectionAndPosition(HWND window, DWORD vkCode, bool cycle, winrt::com_ptr<IZoneWindow> zoneWindow)
+{
+    return zoneWindow && zoneWindow->MoveWindowIntoZoneByDirectionAndPosition(window, vkCode, cycle);
 }
 
 void WindowMoveHandlerPrivate::WarnIfElevationIsRequired(HWND window) noexcept
@@ -401,11 +414,11 @@ void WindowMoveHandlerPrivate::WarnIfElevationIsRequired(HWND window) noexcept
         if (!warning_shown && !is_cant_drag_elevated_warning_disabled())
         {
             std::vector<notifications::action_t> actions = {
-                notifications::link_button{ GET_RESOURCE_STRING(IDS_CANT_DRAG_ELEVATED_LEARN_MORE), L"https://aka.ms/powertoysDetectedElevatedHelp" },
-                notifications::link_button{ GET_RESOURCE_STRING(IDS_CANT_DRAG_ELEVATED_DIALOG_DONT_SHOW_AGAIN), L"powertoys://cant_drag_elevated_disable/" }
+                notifications::link_button{ GET_RESOURCE_STRING(IDS_CANT_DRAG_ELEVATED_LEARN_MORE), NonLocalizable::FancyZonesRunAsAdminInfoPage },
+                notifications::link_button{ GET_RESOURCE_STRING(IDS_CANT_DRAG_ELEVATED_DIALOG_DONT_SHOW_AGAIN), NonLocalizable::ToastNotificationButtonUrl }
             };
             notifications::show_toast_with_activations(GET_RESOURCE_STRING(IDS_CANT_DRAG_ELEVATED),
-                                                       TOAST_TITLE,
+                                                       GET_RESOURCE_STRING(IDS_FANCYZONES),
                                                        {},
                                                        std::move(actions));
             warning_shown = true;

@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Copyright (c) Microsoft Corporation
+// The Microsoft Corporation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.IO;
 using System.Net;
 
@@ -6,25 +10,25 @@ namespace PowerLauncher.Helper
 {
     public class DataWebRequestFactory : IWebRequestCreate
     {
-        class DataWebRequest : WebRequest
+        private class DataWebRequest : WebRequest
         {
-            private readonly Uri m_uri;
+            private readonly Uri _uri;
 
             public DataWebRequest(Uri uri)
             {
-                m_uri = uri;
+                _uri = uri;
             }
 
             public override WebResponse GetResponse()
             {
-                return new DataWebResponse(m_uri);
+                return new DataWebResponse(_uri);
             }
         }
 
-        class DataWebResponse : WebResponse
+        private class DataWebResponse : WebResponse
         {
-            private readonly string m_contentType;
-            private readonly byte[] m_data;
+            private readonly string _contentType;
+            private readonly byte[] _data;
 
             public DataWebResponse(Uri uri)
             {
@@ -32,14 +36,18 @@ namespace PowerLauncher.Helper
 
                 int commaIndex = uriString.IndexOf(',', StringComparison.InvariantCultureIgnoreCase);
                 var headers = uriString.Substring(0, commaIndex).Split(';');
-                m_contentType = headers[0];
+                _contentType = headers[0];
                 string dataString = uriString.Substring(commaIndex + 1);
-                m_data = Convert.FromBase64String(dataString);
+                _data = Convert.FromBase64String(dataString);
             }
 
             public override string ContentType
             {
-                get { return m_contentType; }
+                get
+                {
+                    return _contentType;
+                }
+
                 set
                 {
                     throw new NotSupportedException();
@@ -48,7 +56,11 @@ namespace PowerLauncher.Helper
 
             public override long ContentLength
             {
-                get { return m_data.Length; }
+                get
+                {
+                    return _data.Length;
+                }
+
                 set
                 {
                     throw new NotSupportedException();
@@ -57,7 +69,7 @@ namespace PowerLauncher.Helper
 
             public override Stream GetResponseStream()
             {
-                return new MemoryStream(m_data);
+                return new MemoryStream(_data);
             }
         }
 

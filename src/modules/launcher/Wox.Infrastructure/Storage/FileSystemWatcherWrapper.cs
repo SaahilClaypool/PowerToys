@@ -1,4 +1,8 @@
-﻿using System.Collections.ObjectModel;
+﻿// Copyright (c) Microsoft Corporation
+// The Microsoft Corporation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.Collections.ObjectModel;
 using System.IO;
 
 namespace Wox.Infrastructure.Storage
@@ -6,7 +10,9 @@ namespace Wox.Infrastructure.Storage
     // File System Watcher Wrapper class which implements the IFileSystemWatcherWrapper interface
     public class FileSystemWatcherWrapper : FileSystemWatcher, IFileSystemWatcherWrapper
     {
-        public FileSystemWatcherWrapper() { }
+        public FileSystemWatcherWrapper()
+        {
+        }
 
         Collection<string> IFileSystemWatcherWrapper.Filters
         {

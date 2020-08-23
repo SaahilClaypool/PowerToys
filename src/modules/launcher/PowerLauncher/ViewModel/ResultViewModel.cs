@@ -1,12 +1,16 @@
-﻿using System;
+﻿// Copyright (c) Microsoft Corporation
+// The Microsoft Corporation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 using System.Windows.Media;
+using PowerLauncher.Helper;
 using Wox.Core.Plugin;
 using Wox.Infrastructure.Image;
 using Wox.Infrastructure.Logger;
 using Wox.Plugin;
-using PowerLauncher.Helper;
 
 namespace PowerLauncher.ViewModel
 {
@@ -15,13 +19,15 @@ namespace PowerLauncher.ViewModel
         public enum ActivationType
         {
             Selection,
-            Hover
-        };
+            Hover,
+        }
 
         public ObservableCollection<ContextMenuItemViewModel> ContextMenuItems { get; } = new ObservableCollection<ContextMenuItemViewModel>();
 
         public ICommand ActivateContextButtonsHoverCommand { get; set; }
+
         public ICommand ActivateContextButtonsSelectionCommand { get; set; }
+
         public ICommand DeactivateContextButtonsHoverCommand { get; set; }
 
         public ICommand DeactivateContextButtonsSelectionCommand { get; set; }
@@ -61,6 +67,7 @@ namespace PowerLauncher.ViewModel
         {
             ActivateContextButtons(ActivationType.Selection);
         }
+
         public void ActivateContextButtons(ActivationType activationType)
         {
             // Result does not contain any context menu items - we don't need to show the context menu ListView at all.
@@ -83,7 +90,6 @@ namespace PowerLauncher.ViewModel
                 IsHovered = true;
             }
         }
-
 
         private void DeactivateContextButtonsHoverAction(object sender)
         {
@@ -118,7 +124,6 @@ namespace PowerLauncher.ViewModel
             }
         }
 
-
         public void LoadContextMenu()
         {
             var results = PluginManager.GetContextMenusForPlugin(Result);
@@ -135,17 +140,20 @@ namespace PowerLauncher.ViewModel
                     AcceleratorModifiers = r.AcceleratorModifiers,
                     Command = new RelayCommand(_ =>
                     {
-                        bool hideWindow = r.Action != null && r.Action(new ActionContext
-                        {
-                            SpecialKeyState = KeyboardHelper.CheckModifiers()
-                        });
+                        bool hideWindow =
+                            r.Action != null &&
+                            r.Action(
+                                new ActionContext
+                                {
+                                    SpecialKeyState = KeyboardHelper.CheckModifiers(),
+                                });
 
                         if (hideWindow)
                         {
-                            //TODO - Do we hide the window
+                            // TODO - Do we hide the window
                             // MainWindowVisibility = Visibility.Collapsed;
                         }
-                    })
+                    }),
                 });
             }
         }
@@ -191,7 +199,7 @@ namespace PowerLauncher.ViewModel
             }
         }
 
-        //Returns false if we've already reached the last item.
+        // Returns false if we've already reached the last item.
         public bool SelectNextContextButton()
         {
             if (ContextMenuSelectedIndex == (ContextMenuItems.Count - 1))
@@ -204,7 +212,7 @@ namespace PowerLauncher.ViewModel
             return true;
         }
 
-        //Returns false if we've already reached the first item.
+        // Returns false if we've already reached the first item.
         public bool SelectPrevContextButton()
         {
             if (ContextMenuSelectedIndex == NoSelectionIndex)
@@ -223,7 +231,7 @@ namespace PowerLauncher.ViewModel
 
         public bool HasSelectedContextButton()
         {
-            var isContextSelected = (ContextMenuSelectedIndex != NoSelectionIndex);
+            var isContextSelected = ContextMenuSelectedIndex != NoSelectionIndex;
             return isContextSelected;
         }
 
@@ -264,7 +272,7 @@ namespace PowerLauncher.ViewModel
 
         public override string ToString()
         {
-            var display = String.IsNullOrEmpty(Result.QueryTextDisplay) ? Result.Title : Result.QueryTextDisplay;
+            var display = string.IsNullOrEmpty(Result.QueryTextDisplay) ? Result.Title : Result.QueryTextDisplay;
             return display;
         }
     }

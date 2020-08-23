@@ -64,7 +64,8 @@ interface __declspec(uuid("{E4839EB7-669D-49CF-84A9-71A2DFD851A3}")) IZoneSet : 
      */
     IFACEMETHOD_(void, MoveWindowIntoZoneByIndexSet)(HWND window, HWND zoneWindow, const std::vector<int>& indexSet) = 0;
     /**
-     * Assign window to the zone based on direction (using WIN + LEFT/RIGHT arrow).
+     * Assign window to the zone based on direction (using WIN + LEFT/RIGHT arrow), based on zone index numbers,
+     * not their on-screen position.
      *
      * @param   window     Handle of window which should be assigned to zone.
      * @param   zoneWindow The m_window of a ZoneWindow, it's a hidden window representing the
@@ -75,7 +76,21 @@ interface __declspec(uuid("{E4839EB7-669D-49CF-84A9-71A2DFD851A3}")) IZoneSet : 
      * @returns Boolean which is always true if cycle argument is set, otherwise indicating if there is more
      *          zones left in the zone layout in which window can move.
      */
-    IFACEMETHOD_(bool, MoveWindowIntoZoneByDirection)(HWND window, HWND zoneWindow, DWORD vkCode, bool cycle) = 0;
+    IFACEMETHOD_(bool, MoveWindowIntoZoneByDirectionAndIndex)(HWND window, HWND zoneWindow, DWORD vkCode, bool cycle) = 0;
+    /**
+     * Assign window to the zone based on direction (using WIN + LEFT/RIGHT/UP/DOWN arrow), based on
+     * their on-screen position.
+     *
+     * @param   window     Handle of window which should be assigned to zone.
+     * @param   zoneWindow The m_window of a ZoneWindow, it's a hidden window representing the
+     *                     current monitor desktop work area.
+     * @param   vkCode     Pressed arrow key.
+     * @param   cycle      Whether we should move window to the first zone if we reached last zone in layout.
+     *
+     * @returns Boolean which is always true if cycle argument is set, otherwise indicating if there is more
+     *          zones left in the zone layout in which window can move.
+     */
+    IFACEMETHOD_(bool, MoveWindowIntoZoneByDirectionAndPosition)(HWND window, HWND zoneWindow, DWORD vkCode, bool cycle) = 0;
     /**
      * Assign window to the zone based on cursor coordinates.
      *
@@ -89,13 +104,13 @@ interface __declspec(uuid("{E4839EB7-669D-49CF-84A9-71A2DFD851A3}")) IZoneSet : 
      * Calculate zone coordinates within zone layout based on number of zones and spacing. Used for one of
      * the predefined layouts (focus, columns, rows, grid, priority grid) or for custom layout.
      *
-     * @param   monitorInfo Information about monitor on which zone layout is applied.
-     * @param   zoneCount   Number of zones inside zone layout.
-     * @param   spacing     Spacing between zones in pixels.
+     * @param   workAreaRect The rectangular area on the screen on which the zone layout is applied.
+     * @param   zoneCount    Number of zones inside zone layout.
+     * @param   spacing      Spacing between zones in pixels.
      *
      * @returns Boolean indicating if calculation was successful.
      */
-    IFACEMETHOD_(bool, CalculateZones)(MONITORINFO monitorInfo, int zoneCount, int spacing) = 0;
+    IFACEMETHOD_(bool, CalculateZones)(RECT workAreaRect, int zoneCount, int spacing) = 0;
     /**
      * Check if the zone with the specified index is empty. Returns true if the zone does not exist.
      * 

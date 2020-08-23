@@ -7,12 +7,20 @@
 #include "ZoneWindow.h"
 #include "trace.h"
 #include "util.h"
+#include "Settings.h"
 
 #include <ShellScalingApi.h>
 #include <mutex>
 #include <fileapi.h>
 
 #include <gdiplus.h>
+
+// Non-Localizable strings
+namespace NonLocalizable
+{
+    const wchar_t SegoeUiFont[] = L"Segoe ui";
+    const wchar_t ToolWindowClassName[] = L"SuperFancyZones_ZoneWindow";
+}
 
 namespace ZoneWindowUtils
 {
@@ -31,6 +39,22 @@ namespace ZoneWindowUtils
             StringCchPrintf(uniqueId, ARRAYSIZE(uniqueId), L"%s_%d_%d_%s", parsedId, monitorRect.width(), monitorRect.height(), virtualDesktopId);
         }
         return std::wstring{ uniqueId };
+    }
+
+    std::wstring GenerateUniqueIdAllMonitorsArea(PCWSTR virtualDesktopId)
+    {
+        std::wstring result{ ZonedWindowProperties::MultiMonitorDeviceID };
+
+        RECT combinedResolution = GetAllMonitorsCombinedRect<&MONITORINFO::rcMonitor>();
+
+        result += L'_';
+        result += std::to_wstring(combinedResolution.right - combinedResolution.left);
+        result += L'_';
+        result += std::to_wstring(combinedResolution.bottom - combinedResolution.top);
+        result += L'_';
+        result += virtualDesktopId;
+
+        return result;
     }
 }
 
@@ -54,7 +78,7 @@ namespace ZoneWindowDrawUtils
     {
         Gdiplus::Graphics g(hdc.get());
 
-        Gdiplus::FontFamily fontFamily(L"Segoe ui");
+        Gdiplus::FontFamily fontFamily(NonLocalizable::SegoeUiFont);
         Gdiplus::Font font(&fontFamily, 80, Gdiplus::FontStyleRegular, Gdiplus::UnitPixel);
         Gdiplus::SolidBrush solidBrush(Gdiplus::Color(255, 0, 0, 0));
 
@@ -179,7 +203,9 @@ public:
     IFACEMETHODIMP_(void)
     MoveWindowIntoZoneByIndexSet(HWND window, const std::vector<int>& indexSet) noexcept;
     IFACEMETHODIMP_(bool)
-    MoveWindowIntoZoneByDirection(HWND window, DWORD vkCode, bool cycle) noexcept;
+    MoveWindowIntoZoneByDirectionAndIndex(HWND window, DWORD vkCode, bool cycle) noexcept;
+    IFACEMETHODIMP_(bool)
+    MoveWindowIntoZoneByDirectionAndPosition(HWND window, DWORD vkCode, bool cycle) noexcept;
     IFACEMETHODIMP_(void)
     CycleActiveZoneSet(DWORD vkCode) noexcept;
     IFACEMETHODIMP_(std::wstring)
@@ -236,7 +262,7 @@ ZoneWindow::ZoneWindow(HINSTANCE hinstance)
     wcex.cbSize = sizeof(WNDCLASSEX);
     wcex.lpfnWndProc = s_WndProc;
     wcex.hInstance = hinstance;
-    wcex.lpszClassName = L"SuperFancyZones_ZoneWindow";
+    wcex.lpszClassName = NonLocalizable::ToolWindowClassName;
     wcex.hCursor = LoadCursorW(nullptr, IDC_ARROW);
     RegisterClassExW(&wcex);
 
@@ -253,22 +279,29 @@ bool ZoneWindow::Init(IZoneWindowHost* host, HINSTANCE hinstance, HMONITOR monit
 {
     m_host.copy_from(host);
 
-    MONITORINFO mi{};
-    mi.cbSize = sizeof(mi);
-    if (!GetMonitorInfoW(monitor, &mi))
-    {
-        return false;
-    }
-
+    Rect workAreaRect;
     m_monitor = monitor;
-    const UINT dpi = GetDpiForMonitor(m_monitor);
-    const Rect workAreaRect(mi.rcWork, dpi);
+    if (monitor)
+    {
+        MONITORINFO mi{};
+        mi.cbSize = sizeof(mi);
+        if (!GetMonitorInfoW(monitor, &mi))
+        {
+            return false;
+        }
+        const UINT dpi = GetDpiForMonitor(m_monitor);
+        workAreaRect = Rect(mi.rcWork, dpi);
+    }
+    else
+    {
+        workAreaRect = GetAllMonitorsCombinedRect<&MONITORINFO::rcWork>();
+    }
 
     m_uniqueId = uniqueId;
     InitializeZoneSets(parentUniqueId);
 
     m_window = wil::unique_hwnd{
-        CreateWindowExW(WS_EX_TOOLWINDOW, L"SuperFancyZones_ZoneWindow", L"", WS_POPUP, workAreaRect.left(), workAreaRect.top(), workAreaRect.width(), workAreaRect.height(), nullptr, nullptr, hinstance, this)
+        CreateWindowExW(WS_EX_TOOLWINDOW, NonLocalizable::ToolWindowClassName, L"", WS_POPUP, workAreaRect.left(), workAreaRect.top(), workAreaRect.width(), workAreaRect.height(), nullptr, nullptr, hinstance, this)
     };
 
     if (!m_window)
@@ -277,6 +310,9 @@ bool ZoneWindow::Init(IZoneWindowHost* host, HINSTANCE hinstance, HMONITOR monit
     }
 
     MakeWindowTransparent(m_window.get());
+
+    // Ignore flashZones
+    /*
     if (flashZones)
     {
         // Don't flash if the foreground window is in full screen mode
@@ -290,6 +326,7 @@ bool ZoneWindow::Init(IZoneWindowHost* host, HINSTANCE hinstance, HMONITOR monit
             FlashZones();
         }
     }
+    */
 
     return true;
 }
@@ -422,11 +459,25 @@ ZoneWindow::MoveWindowIntoZoneByIndexSet(HWND window, const std::vector<int>& in
 }
 
 IFACEMETHODIMP_(bool)
-ZoneWindow::MoveWindowIntoZoneByDirection(HWND window, DWORD vkCode, bool cycle) noexcept
+ZoneWindow::MoveWindowIntoZoneByDirectionAndIndex(HWND window, DWORD vkCode, bool cycle) noexcept
 {
     if (m_activeZoneSet)
     {
-        if (m_activeZoneSet->MoveWindowIntoZoneByDirection(window, m_window.get(), vkCode, cycle))
+        if (m_activeZoneSet->MoveWindowIntoZoneByDirectionAndIndex(window, m_window.get(), vkCode, cycle))
+        {
+            SaveWindowProcessToZoneIndex(window);
+            return true;
+        }
+    }
+    return false;
+}
+
+IFACEMETHODIMP_(bool)
+ZoneWindow::MoveWindowIntoZoneByDirectionAndPosition(HWND window, DWORD vkCode, bool cycle) noexcept
+{
+    if (m_activeZoneSet)
+    {
+        if (m_activeZoneSet->MoveWindowIntoZoneByDirectionAndPosition(window, m_window.get(), vkCode, cycle))
         {
             SaveWindowProcessToZoneIndex(window);
             return true;
@@ -490,7 +541,8 @@ ZoneWindow::ShowZoneWindow() noexcept
 
     SetWindowPos(window, windowInsertAfter, 0, 0, 0, 0, flags);
 
-    std::thread{ [=]() {
+    std::thread{ [this, strong_this{ get_strong() }]() {
+        auto window = m_window.get();
         AnimateWindow(window, m_showAnimationDuration, AW_BLEND);
         InvalidateRect(window, nullptr, true);
         if (!m_host->InMoveSize())
@@ -566,16 +618,31 @@ void ZoneWindow::CalculateZoneSet() noexcept
             zoneSetId,
             activeZoneSet.type,
             m_monitor));
-        MONITORINFO monitorInfo{};
-        monitorInfo.cbSize = sizeof(monitorInfo);
-        if (GetMonitorInfoW(m_monitor, &monitorInfo))
+        
+        RECT workArea;
+        if (m_monitor)
         {
-            bool showSpacing = deviceInfoData->showSpacing;
-            int spacing = showSpacing ? deviceInfoData->spacing : 0;
-            int zoneCount = deviceInfoData->zoneCount;
-            zoneSet->CalculateZones(monitorInfo, zoneCount, spacing);
-            UpdateActiveZoneSet(zoneSet.get());
+            MONITORINFO monitorInfo{};
+            monitorInfo.cbSize = sizeof(monitorInfo);
+            if (GetMonitorInfoW(m_monitor, &monitorInfo))
+            {
+                workArea = monitorInfo.rcWork;
+            }
+            else
+            {
+                return;
+            }
         }
+        else
+        {
+            workArea = GetAllMonitorsCombinedRect<&MONITORINFO::rcWork>();
+        }
+
+        bool showSpacing = deviceInfoData->showSpacing;
+        int spacing = showSpacing ? deviceInfoData->spacing : 0;
+        int zoneCount = deviceInfoData->zoneCount;
+        zoneSet->CalculateZones(workArea, zoneCount, spacing);
+        UpdateActiveZoneSet(zoneSet.get());        
     }
 }
 

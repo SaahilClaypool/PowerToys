@@ -17,6 +17,7 @@ namespace Microsoft.PowerToys.Settings.UI.Lib
             FancyzonesOverrideSnapHotkeys = new BoolProperty();
             FancyzonesMouseSwitch = new BoolProperty();
             FancyzonesMoveWindowsAcrossMonitors = new BoolProperty();
+            FancyzonesMoveWindowsBasedOnPosition = new BoolProperty();
             FancyzonesDisplayChangeMoveWindows = new BoolProperty();
             FancyzonesZoneSetChangeMoveWindows = new BoolProperty();
             FancyzonesAppLastZoneMoveWindows = new BoolProperty();
@@ -24,6 +25,7 @@ namespace Microsoft.PowerToys.Settings.UI.Lib
             FancyzonesRestoreSize = new BoolProperty();
             UseCursorposEditorStartupscreen = new BoolProperty(ConfigDefaults.DefaultUseCursorposEditorStartupscreen);
             FancyzonesShowOnAllMonitors = new BoolProperty();
+            FancyzonesSpanZonesAcrossMonitors = new BoolProperty();
             FancyzonesZoneHighlightColor = new StringProperty(ConfigDefaults.DefaultFancyZonesZoneHighlightColor);
             FancyzonesHighlightOpacity = new IntProperty(50);
             FancyzonesEditorHotkey = new KeyboardKeysProperty(DefaultHotkeyValue);
@@ -45,6 +47,9 @@ namespace Microsoft.PowerToys.Settings.UI.Lib
         [JsonPropertyName("fancyzones_moveWindowAcrossMonitors")]
         public BoolProperty FancyzonesMoveWindowsAcrossMonitors { get; set; }
 
+        [JsonPropertyName("fancyzones_moveWindowsBasedOnPosition")]
+        public BoolProperty FancyzonesMoveWindowsBasedOnPosition { get; set; }
+
         [JsonPropertyName("fancyzones_displayChange_moveWindows")]
         public BoolProperty FancyzonesDisplayChangeMoveWindows { get; set; }
 
@@ -65,6 +70,9 @@ namespace Microsoft.PowerToys.Settings.UI.Lib
 
         [JsonPropertyName("fancyzones_show_on_all_monitors")]
         public BoolProperty FancyzonesShowOnAllMonitors { get; set; }
+
+        [JsonPropertyName("fancyzones_span_zones_across_monitors")]
+        public BoolProperty FancyzonesSpanZonesAcrossMonitors { get; set; }
 
         [JsonPropertyName("fancyzones_makeDraggedWindowTransparent")]
         public BoolProperty FancyzonesMakeDraggedWindowTransparent { get; set; }
